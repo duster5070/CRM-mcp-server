@@ -1,0 +1,31 @@
+{
+  "name": "crm-ai-mcp-server",
+  "version": "1.0.0",
+  "description": "AI Capabilities & Interfaces Integration for Project Management & CRM Platform",
+  "main": "build/server.js",
+  "scripts": {
+    "start": "node build/server.js",
+    "dev": "ts-node src/server.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "mcp",
+    "ai",
+    "crm"
+  ],
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@prisma/client": "^5.10.2",
+    "dotenv": "^16.4.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.8",
+    "prisma": "^5.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

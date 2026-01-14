@@ -1,0 +1,7 @@
+node_modules/
+build/
+docs/
+implementation_plan.md
+.env
+.DS_Store
+*.log
