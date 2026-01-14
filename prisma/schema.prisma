@@ -1,0 +1,297 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+ 
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+ 
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
+}
+ 
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+ 
+enum UserRole {
+  USER
+  ADMIN
+  CLIENT
+  MEMBER
+}
+ 
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId 
+  name          String
+  firstName          String
+  lastName          String
+  phone          String
+  email         String   @unique
+  emailVerified DateTime?
+  image         String?
+  userLogo       String?
+  country String?
+  location String?
+  role          UserRole  @default(USER)
+  password      String?
+  plain      String?
+  companyName      String?
+  companyDescription      String?
+  userId String? @db.ObjectId
+  status Boolean @default(true)
+  accounts      Account[]
+  guestProjects GuestProject[]
+  sessions      Session[]
+  projects Project[]
+  invoices Invoice[]
+  comments  ProjectComment[]
+  portfolioItems PortfolioItem[]
+   modules  Module[]
+  payments Payment[]
+  folders     Folder[]
+  isVerfied     Boolean   @default(false)
+  token         Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  portfolioProfile     PortfolioProfile?
+  subscribers    Subscriber[]
+}
+
+model PortfolioProfile {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String      @unique @db.ObjectId
+  user            User        @relation(fields: [userId],references: [id], onDelete: Cascade)
+  name            String
+  profileImage    String?
+  location        String
+  projectCount    Float
+  email           String
+  bookingLink     String
+  description     String
+  twitterUrl      String?
+  youtubeUrl      String?
+  linkedinUrl     String?
+  instagramUrl    String?
+  githubUrl       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model Subscriber {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String      @db.ObjectId
+  user            User        @relation(fields: [userId],references: [id], onDelete: Cascade)
+  email           String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+ enum ProjectStatus{
+ COMPLETE
+ ONGOING
+ }
+model Folder {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  files     File[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model File {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  type      String
+  size      Int
+  url       String  // Add this for the UploadThing URL (optional)
+  key       String   // Add this for the UploadThing file key
+  folder    Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folderId  String   @db.ObjectId
+  userId    String   @db.ObjectId  // Add this
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+
+ model Project {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  name String?
+  slug String @unique
+  notes String?
+  description String?
+  bannerImage String?
+  freeDomain   String? @default("https://test.vercel.app")
+  customDomain  String? @default("https://test.com")
+  gradient String?
+  thumbnail String?
+  budget Int? @default(0)
+  deadline Int? 
+  startDate DateTime @default(now())
+  endDate DateTime?
+  isPublic Boolean @default(false)
+  status ProjectStatus @default(ONGOING)
+  // client Client @relation(fields: [clientId],references: [id], onDelete: Cascade)
+  clientId String @db.ObjectId
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+  modules  Module[]
+  comments  ProjectComment[]
+  members Member[]
+  invoices Invoice[]
+  payments Payment[]
+
+  // quotations Quotation[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+ }
+
+ model ProjectComment{
+   id  String @id @default(auto()) @map("_id") @db.ObjectId
+   content String
+   project Project @relation(fields: [projectId],references: [id], onDelete: Cascade)
+   projectId String @db.ObjectId
+   userName String
+   userRole UserRole
+   user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ }
+ model GuestProject{
+   id  String @id @default(auto()) @map("_id") @db.ObjectId
+   projectLink String
+   guestName String
+   projectName String 
+   projectOwner String
+   user User @relation(fields: [guestId],references: [id], onDelete: Cascade)
+  guestId String @db.ObjectId
+  ownerId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ }
+
+ model Module{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  project Project @relation(fields: [projectId],references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  userName String 
+  userId   String   @db.ObjectId
+  projectId String @db.ObjectId
+
+  tasks Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ }
+
+enum TaskStatus {
+  TODO
+  INPROGRESS
+  COMPLETED
+}
+
+ model Task{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  status TaskStatus @default(TODO)
+  module Module @relation(fields: [moduleId],references: [id], onDelete: Cascade)
+  moduleId String @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ }
+
+ model Member{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  email String
+  role String
+  project Project @relation(fields: [projectId],references: [id], onDelete: Cascade)
+  projectId String @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ }
+ 
+model Invoice{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceNumber String @unique
+  amount Float
+  status String
+  duedate DateTime
+  project Project @relation(fields: [projectId],references: [id], onDelete: Cascade)
+  projectId String @db.ObjectId
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Payment {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  amount        Float
+  tax           Float
+  date          DateTime @default(now())
+  invoiceNumber String   @unique
+  method        String
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId     String   @db.ObjectId
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  userId        String   @db.ObjectId
+  clientId      String   @db.ObjectId
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+
+model PortfolioItem{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  description String
+  imageUrl String?
+  projectUrl String?
+  user User @relation(fields: [userId],references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Category {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String    @unique
+  imageUrl    String?
+  description String?
+ 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+
