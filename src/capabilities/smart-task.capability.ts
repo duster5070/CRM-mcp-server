@@ -1,49 +1,31 @@
 import { SmartTaskInput, AIContext } from "../types/ai.types.js";
 import { AIPermissionsPolicy } from "../policies/ai-permissions.policy.js";
+import { AiUtilityService } from "../services/ai/ai.utility.js";
+import { InputValidationError, UnauthorizedError } from "../errors/mcp.errors.js";
 
 export class SmartTaskCapability {
+  /**
+   * Generates a structured list of tasks using the validated AI Utility Layer.
+   */
   static async suggestTasks(context: AIContext, input: SmartTaskInput) {
-    if (!AIPermissionsPolicy.canGenerateContent(context)) {
-      return "ACCESS_DENIED: You do not have permission to generate AI task suggestions.";
+    // 1. Policy & Permission Enforcement
+    if (!AIPermissionsPolicy.canGenerateAiTasks(context)) {
+      throw new UnauthorizedError("You do not have permission to generate AI task suggestions.");
     }
-    const description = input.projectDescription.toLowerCase();
-    
-    // 1. Define Industry Blueprints
-    const blueprints = [
-      {
-        keywords: ['saas', 'web app', 'platform', 'dashboard'],
-        modules: [
-          { name: "User Auth & Security", tasks: ["JWT Implementation", "RBAC Logic", "Password Reset Flow"] },
-          { name: "Core API", tasks: ["CRUD for Resources", "Filtering & Sorting", "Rate Limiting"] },
-          { name: "Frontend Setup", tasks: ["Design System", "Main Dashboard", "Responsive Layout"] }
-        ]
-      },
-      {
-        keywords: ['mobile', 'ios', 'android', 'app'],
-        modules: [
-          { name: "Mobile UI", tasks: ["Navigation Stack", "Onboarding Screens", "Theming"] },
-          { name: "Device Features", tasks: ["Push Notifications", "Biometrics", "Camera Integration"] },
-          { name: "Store Prep", tasks: ["App Icon", "Splashed Screens", "Privacy Policy"] }
-        ]
-      },
-      {
-        keywords: ['seo', 'marketing', 'content'],
-        modules: [
-          { name: "On-Page SEO", tasks: ["Meta Tags Optimization", "Sitemap Generation", "Schema Markup"] },
-          { name: "Analytics", tasks: ["GTM Setup", "Conversion Tracking", "Search Console Link"] },
-          { name: "Performance", tasks: ["Image Optimization", "Caching Strategy", "LCP Improvements"] }
-        ]
-      }
-    ];
 
-    // 2. Select the best blueprint
-    const selectedBlueprint = blueprints.find(b => 
-      b.keywords.some(k => description.includes(k))
-    ) || blueprints[0]; // Default to SaaS if no match
+    // 2. Business Validation
+    const desc = input.projectDescription.trim();
+    if (desc.length < 10 || /^(test|placeholder|asdf|hello|abc)$/i.test(desc)) {
+      throw new InputValidationError(
+        "I need a more detailed project description to generate meaningful tasks. " +
+        "Please describe the industry, goals, and core features of your project."
+      );
+    }
 
-    // 3. Filter by requested moduleCount
-    const finalModules = selectedBlueprint.modules.slice(0, input.moduleCount || 3);
-
-    return finalModules;
+    // 3. Delegation to Strict Utility Layer
+    return await AiUtilityService.generateValidatedTasks(
+      desc, 
+      input.moduleCount || 3
+    );
   }
 }
