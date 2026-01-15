@@ -11,7 +11,9 @@ export class FinanceContext {
             description: true,
             status: true,
             budget: true,
+            id: true,
             userId: true, // Owner
+            clientId: true, // Client
             members: { select: { id: true } }, // Members
             invoices: { select: { amount: true } },
             payments: { select: { amount: true } }

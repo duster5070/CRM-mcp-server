@@ -1,20 +1,21 @@
-import { ProjectContext } from "../context/project.context.js";
+import { ProjectContext, PermissionsContext } from "../context/index.js";
 import { ProjectSummary, AIContext } from "../types/ai.types.js";
 import { AIPermissionsPolicy } from "../policies/ai-permissions.policy.js";
+import { ProjectSummaryPrompt } from "../prompts/templates/project-summary.prompt.js";
+import { UnauthorizedError } from "../errors/mcp.errors.js";
 
 export class ProjectSummaryCapability {
   static async summarize(context: AIContext, projectId: string): Promise<ProjectSummary | string | null> {
-    const data = await ProjectContext.getProjectSummaryData(projectId);
+    // 1. Get Membership & Flags (Senior Dev Way)
+    const auth = await PermissionsContext.getProjectMembership(context.userId, projectId);
     
-    if (!data) return null;
-
-    // Check Permissions
-    const memberIds = data.members.map((m: any) => m.id);
-    const hasAccess = AIPermissionsPolicy.canReadProject(context, memberIds, data.userId);
-
-    if (!hasAccess) {
-      return "ACCESS_DENIED: You do not have permission to view this project summary.";
+    // 2. Policy Enforcement
+    if (!AIPermissionsPolicy.canReadProject(context, auth)) {
+      throw new UnauthorizedError("You do not have permission to view this project summary.");
     }
+
+    const data = await ProjectContext.getProjectSummaryData(projectId);
+    if (!data) return null;
 
     const tasks = data.modules.flatMap(m => m.tasks);
     const totalTasks = tasks.length;
@@ -32,53 +33,7 @@ export class ProjectSummaryCapability {
       statusString = "DELAYED";
     }
 
-    const sections: string[] = [];
-
-    // Header section
-    sections.push(`Project "${data.name}" [Status: ${statusString}]`);
-
-    // 1. Timeline & Progress
-    sections.push(`1. Timeline & Progress
-   - Completion: ${Math.round(progress)}% (${completedTasks}/${totalTasks} tasks)
-   - Start Date: ${new Date(data.startDate).toLocaleDateString()}
-   - Target End: ${data.endDate ? new Date(data.endDate).toLocaleDateString() : 'TBD'}`);
-
-    // 2. Financial Overview
-    sections.push(`2. Financial Overview
-   - Budget: ${data.budget}
-   - Paid to Date: ${totalPaid} (${Math.round(budgetUsed)}% utilized)
-   - Outstanding Balance: ${outstanding}
-   - Invoice Status: ${data.invoices.length} total invoices issued`);
-
-    // 3. Team & Stakeholders
-    const team = data.members.map(m => `${m.name} (${m.role})`).join(", ");
-    sections.push(`3. Team
-   - Members: ${team || 'No members assigned'}`);
-
-    // 4. Modules & Tasks
-    const moduleDetails = data.modules.map(m => {
-      const taskCount = m.tasks.length;
-      const tDone = m.tasks.filter(t => t.status === 'COMPLETED').length;
-      return `   - ${m.name}: ${Math.round((tDone/taskCount)*100 || 0)}% done (${tDone}/${taskCount} tasks)`;
-    }).join("\n");
-    sections.push(`4. Execution Details
-${moduleDetails || '   - No modules defined'}`);
-
-    // 5. Deployment & Links
-    sections.push(`5. Deployment & Links
-   - Free Domain: ${data.freeDomain || 'Not deployed'}
-   - Custom Domain: ${data.customDomain || 'No custom domain'}`);
-
-    // 6. Recent Activity
-    const recentComments = data.comments.map(c => `   - "${c.content}" by ${c.userName} on ${new Date(c.createdAt).toLocaleDateString()}`).join("\n");
-    sections.push(`6. Recent Discussions
-${recentComments || '   - No recent activity'}`);
-
-    // 7. Project Overview
-    sections.push(`7. Project Description
-${data.description || 'No description provided.'}`);
-
-    const summaryText = sections.join("\n\n");
+    const summaryText = ProjectSummaryPrompt.format(data, progress, totalPaid, budgetUsed, outstanding, statusString);
 
     return {
       projectId,

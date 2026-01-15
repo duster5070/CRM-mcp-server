@@ -1,19 +1,21 @@
 import { FinanceContext } from "../context/finance.context.js";
+import { PermissionsContext } from "../context/permissions.context.js";
 import { InvoiceExplanation, InvoiceExplanationInput, AIContext } from "../types/ai.types.js";
 import { AIPermissionsPolicy } from "../policies/ai-permissions.policy.js";
+import { UnauthorizedError } from "../errors/mcp.errors.js";
 
 export class InvoiceExplainerCapability {
   static async explain(context: AIContext, input: InvoiceExplanationInput): Promise<InvoiceExplanation | string | null> {
     const invoice = await FinanceContext.getInvoiceDetails(input.invoiceId);
-    if (!invoice) return null;
+    if (!invoice || !invoice.project) return null;
 
-    // Check Permissions (Admins or Owners only for financials)
-    const hasAccess = AIPermissionsPolicy.canViewFinancials(context, invoice.project?.userId || "");
+    // 1. Get Membership & Flags
+    const auth = await PermissionsContext.getProjectMembership(context.userId, invoice.projectId);
 
-    if (!hasAccess) {
-      return "ACCESS_DENIED: Only project owners or administrators can view detailed invoice explanations.";
+    // 2. Policy Enforcement (Admins/Owners/Clients only for financials)
+    if (!AIPermissionsPolicy.canViewFinancials(context, auth)) {
+      throw new UnauthorizedError("Only project owners or administrators can view detailed invoice explanations.");
     }
-    if (!invoice) return null;
 
     const project = invoice.project;
     const totalInvoiced = project?.invoices.reduce((sum: number, i: any) => sum + i.amount, 0) || 0;

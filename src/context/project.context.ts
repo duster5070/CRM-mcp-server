@@ -1,9 +1,16 @@
 import { prisma } from "../db.js";
 import { AIContext } from "../types/ai.types.js";
+import { McpError, McpErrorCode } from "../errors/mcp.errors.js";
+
+const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
 
 export class ProjectContext {
   static async getProjectDetails(context: AIContext, projectId: string) {
     // 1. Fetch raw data
+    if (!isValidObjectId(projectId)) {
+      throw new McpError(McpErrorCode.INVALID_PARAMS, `Invalid Project ID format: ${projectId}`);
+    }
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: {
@@ -26,8 +33,13 @@ export class ProjectContext {
   }
 
   static async getProjectSummaryData(projectId: string) {
-    return prisma.project.findUnique({
-      where: { id: projectId },
+    if (!isValidObjectId(projectId)) {
+       throw new McpError(McpErrorCode.INVALID_PARAMS, `Invalid Project ID format: ${projectId}`);
+    }
+
+    try {
+      return await prisma.project.findUnique({
+        where: { id: projectId },
       select: {
         name: true,
         description: true,
@@ -81,6 +93,10 @@ export class ProjectContext {
           }
         }
       }
-    });
+      });
+    } catch (error) {
+       console.error("Prisma Fetch Error:", error);
+       throw new McpError(McpErrorCode.INTERNAL_ERROR, "Failed to retrieve project data from database.");
+    }
   }
 }

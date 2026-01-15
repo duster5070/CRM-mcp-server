@@ -2,39 +2,49 @@ import { AIContext } from '../types/ai.types.js';
 
 export class AIPermissionsPolicy {
   /**
-   * Check if a user can read a project summary/details
+   * Check if a user can read project details (Summary, Tasks, Modules)
    */
-  static canReadProject(context: AIContext, projectMemberIds: string[], projectOwnerId: string): boolean {
-    if (context.role === 'ADMIN') return true;
-    if (context.userId === projectOwnerId) return true;
-    if (projectMemberIds.includes(context.userId)) return true;
-    return false;
+  static canReadProject(context: AIContext, auth: { isOwner: boolean; isClient: boolean; isMember: boolean }): boolean {
+    // Owner, Client, and Member can all read project details
+    return auth.isOwner || auth.isClient || auth.isMember;
   }
 
   /**
-   * Check if a user can mutate project data (tasks, invoices, etc)
+   * Check if a user can create/modify core project data (Tasks, Modules, Payments)
    */
-  static canMutateProject(context: AIContext, projectOwnerId: string): boolean {
-    if (context.role === 'ADMIN') return true;
-    if (context.userId === projectOwnerId) return true;
-    return false;
+  static canModifyCoreData(context: AIContext, auth: { isOwner: boolean }): boolean {
+    // Only the Project Owner (USER role in business terms) can manage core entities
+    return auth.isOwner;
   }
 
   /**
-   * Check if a user can see sensitive financial data
+   * Check if a user can see sensitive financials (Invoices, Budget Details)
    */
-  static canViewFinancials(context: AIContext, projectOwnerId: string): boolean {
-    // Only Admins and Project Owners should see deep financials
-    if (context.role === 'ADMIN') return true;
-    if (context.userId === projectOwnerId) return true;
-    return false;
+  static canViewFinancials(context: AIContext, auth: { isOwner: boolean; isClient: boolean }): boolean {
+    // Owners always see financials. Clients see them (their own invoices).
+    // Members usually do not see deep financials unless invited as 'ACCOUNTANT' (not implementing yet).
+    return auth.isOwner || auth.isClient;
+  }
+
+  /**
+   * Check if a user can add persistent notes or comments
+   */
+  static canAddComments(context: AIContext, auth: { isOwner: boolean; isClient: boolean; isMember: boolean }): boolean {
+    // Everyone involved in the project can contribute to discussions
+    return auth.isOwner || auth.isClient || auth.isMember;
   }
 
   /**
    * Check if a user can generate AI content (General permission)
    */
-  static canGenerateContent(context: AIContext): boolean {
-    // We might restrict this to paid users later
-    return ['ADMIN', 'USER', 'MEMBER'].includes(context.role);
+  /**
+   * Check if a user can generate AI content (General permission)
+   */
+  static canGenerateAiTasks(context: AIContext, auth?: { isOwner: boolean }): boolean {
+    // If we have specific project auth, check if they are the owner
+    if (auth) return auth.isOwner;
+
+    // For general generation (new projects), only the 'USER' (owner role) or 'ADMIN' can trigger this
+    return ['ADMIN', 'USER'].includes(context.role);
   }
 }

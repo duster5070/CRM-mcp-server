@@ -1,19 +1,20 @@
-import { ProjectContext } from "../context/project.context.js";
+import { ProjectContext, PermissionsContext } from "../context/index.js";
 import { RiskReport, AIContext } from "../types/ai.types.js";
 import { AIPermissionsPolicy } from "../policies/ai-permissions.policy.js";
+import { UnauthorizedError } from "../errors/mcp.errors.js";
 
 export class RiskAnalysisCapability {
   static async analyze(context: AIContext, projectId: string): Promise<RiskReport | string | null> {
+    // 1. Get Membership & Flags
+    const auth = await PermissionsContext.getProjectMembership(context.userId, projectId);
+    
+    // 2. Policy Enforcement
+    if (!AIPermissionsPolicy.canReadProject(context, auth)) {
+      throw new UnauthorizedError("You do not have permission to view this risk report.");
+    }
+
     const data = await ProjectContext.getProjectSummaryData(projectId);
     if (!data) return null;
-
-    // Check Permissions
-    const memberIds = data.members.map((m: any) => m.id);
-    const hasAccess = AIPermissionsPolicy.canReadProject(context, memberIds, data.userId);
-
-    if (!hasAccess) {
-      return "ACCESS_DENIED: You do not have permission to view this risk report.";
-    }
 
     // 1. Task Progress Metrics
     const tasks = data.modules.flatMap(m => m.tasks);
