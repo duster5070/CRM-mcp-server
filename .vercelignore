@@ -1,0 +1,12 @@
+.env
+.git
+.gitignore
+.vercel
+node_modules
+build
+brain
+docs
+logs
+*.log
+PRISMA_WINDOWS_FIX.md
+CLIENT_INTEGRATION_GUIDE.md

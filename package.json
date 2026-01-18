@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node build/server.js",
     "dev": "ts-node src/server.ts",
-    "build": "prisma generate && tsc"
+    "build": "tsc",
+    "build:full": "prisma generate && tsc",
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "mcp",
