@@ -22,7 +22,6 @@ export class AIPermissionsPolicy {
    */
   static canViewFinancials(context: AIContext, auth: { isOwner: boolean; isClient: boolean }): boolean {
     // Owners always see financials. Clients see them (their own invoices).
-    // Members usually do not see deep financials unless invited as 'ACCOUNTANT' (not implementing yet).
     return auth.isOwner || auth.isClient;
   }
 
@@ -34,9 +33,6 @@ export class AIPermissionsPolicy {
     return auth.isOwner || auth.isClient || auth.isMember;
   }
 
-  /**
-   * Check if a user can generate AI content (General permission)
-   */
   /**
    * Check if a user can generate AI content (General permission)
    */

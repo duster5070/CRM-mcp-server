@@ -5,7 +5,7 @@
   "main": "build/server.js",
   "scripts": {
     "start": "node build/server.js",
-    "dev": "ts-node src/server.ts",
+    "dev": "tsx src/server.ts",
     "build": "tsc",
     "build:full": "prisma generate && tsc",
     "prisma:generate": "prisma generate",
@@ -32,6 +32,7 @@
     "@types/node": "^25.0.8",
     "prisma": "^5.10.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
