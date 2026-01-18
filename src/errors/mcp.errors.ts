@@ -4,6 +4,7 @@ export enum McpErrorCode {
   METHOD_NOT_FOUND = -32601,
   PARSE_ERROR = -32700,
   PERMISSION_DENIED = 403,
+  FORBIDDEN = 403,
   NOT_FOUND = 404,
 }
 

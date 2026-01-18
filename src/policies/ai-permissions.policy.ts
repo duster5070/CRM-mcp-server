@@ -47,4 +47,18 @@ export class AIPermissionsPolicy {
     // For general generation (new projects), only the 'USER' (owner role) or 'ADMIN' can trigger this
     return ['ADMIN', 'USER'].includes(context.role);
   }
+
+  /**
+   * Check if user can create a new project
+   */
+  static canCreateProject(context: AIContext): boolean {
+    return ['ADMIN', 'USER'].includes(context.role);
+  }
+
+  /**
+   * Check if user can delete a project
+   */
+  static canDeleteProject(context: AIContext, auth: { isOwner: boolean }): boolean {
+    return auth.isOwner;
+  }
 }
